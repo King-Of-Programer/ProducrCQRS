@@ -1,0 +1,66 @@
+﻿using AutoMapper;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using ProducrCQRS.CQRS.Command;
+using ProducrCQRS.Data;
+using ProducrCQRS.Models;
+using ProducrCQRS.Profiles;
+
+namespace ProducrCQRS.CQRS.Handler
+{
+    public class CreateProductHandler : IRequestHandler<CreateProductCommandRequst, 
+                                                            Result<ProductViewProfile>>
+    {
+        private readonly AppDbContext _appDbContext;
+        private readonly IMapper _mapper;
+        public CreateProductHandler(AppDbContext
+            appDbContext, IMapper mapper)
+        {
+            _appDbContext = appDbContext;
+            _mapper = mapper;
+        }
+
+        public async Task<Result<ProductViewProfile>> Handle(CreateProductCommandRequst request, CancellationToken cancellationToken)
+        {
+            var exist = await _appDbContext.Products
+                .AnyAsync(x => x.Code == request.Code,
+                cancellationToken);
+            if (exist)
+            {
+                return Result<ProductViewProfile>
+                    .Fail("Product with this code already exist");
+            }
+
+            var product = new Product
+            {
+                Name = request.Name,
+                Code = request.Code,
+                CategoryId = request.CategoryId,
+                Price = request.Price,
+                Discount = request.Discount,
+                Quantity = request.Quantity
+
+            };
+            _appDbContext.Products.Add(product);
+            await _appDbContext.SaveChangesAsync();
+            var result = _mapper.Map<ProductViewProfile>(product);
+            return Result<ProductViewProfile>.Success(result, "Product created successfully");
+            
+        }
+
+
+
+
+        //public async Task<Guid> Handle(CreateProductCommandRequst request)
+        //{
+        //    var product = new Product
+        //    {
+        //        Name = request.Name,
+        //        Price = request.Price
+        //    };
+        //    _appDbContext.Products.Add(product);
+        //    await _appDbContext.SaveChangesAsync();
+        //    return product.Id;
+        //}
+    }
+}
