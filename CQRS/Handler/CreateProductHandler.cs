@@ -13,11 +13,13 @@ namespace ProducrCQRS.CQRS.Handler
     {
         private readonly AppDbContext _appDbContext;
         private readonly IMapper _mapper;
+        private readonly ILogger _loger;
         public CreateProductHandler(AppDbContext
-            appDbContext, IMapper mapper)
+            appDbContext, IMapper mapper, ILogger loger)
         {
             _appDbContext = appDbContext;
             _mapper = mapper;
+            _loger = loger;
         }
 
         public async Task<Result<ProductViewProfile>> Handle(CreateProductCommandRequst request, CancellationToken cancellationToken)
@@ -25,8 +27,11 @@ namespace ProducrCQRS.CQRS.Handler
             var exist = await _appDbContext.Products
                 .AnyAsync(x => x.Code == request.Code,
                 cancellationToken);
+            _loger.LogInformation("Creating product...");
+
             if (exist)
             {
+                _loger.LogError($"Product {request.Name} alredy exist");
                 return Result<ProductViewProfile>
                     .Fail("Product with this code already exist");
             }
